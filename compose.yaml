@@ -1,0 +1,16 @@
+services:
+  db:
+    container_name: spring-security-db
+    image: postgres:17-alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: spring_security
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata:/var/lib/postgres/data
+
+volumes:
+  pgdata:
