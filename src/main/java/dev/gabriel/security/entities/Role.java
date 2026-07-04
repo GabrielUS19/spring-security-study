@@ -2,8 +2,9 @@ package dev.gabriel.security.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.jspecify.annotations.Nullable;
-import org.springframework.security.core.GrantedAuthority;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -20,4 +21,7 @@ public class Role {
 
     @Column(unique = true, nullable = false)
     private String name;
+
+    @ManyToMany(mappedBy = "roles", fetch = FetchType.LAZY)
+    private Set<User> users = new HashSet<>();
 }
