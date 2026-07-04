@@ -5,6 +5,7 @@ import dev.gabriel.security.dto.requests.RegisterRequest;
 import dev.gabriel.security.dto.responses.LoginResponse;
 import dev.gabriel.security.dto.responses.RegisterResponse;
 import dev.gabriel.security.entities.User;
+import dev.gabriel.security.infra.security.TokenService;
 import dev.gabriel.security.repositories.RoleRepository;
 import dev.gabriel.security.repositories.UserRepository;
 import jakarta.transaction.Transactional;
@@ -27,22 +28,25 @@ public class AuthController {
     private final RoleRepository roleRepository;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
+    private final TokenService tokenService;
 
-    public AuthController(UserRepository userRepository, RoleRepository roleRepository, AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder) {
+    public AuthController(UserRepository userRepository, RoleRepository roleRepository, AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder, TokenService tokenService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.authenticationManager = authenticationManager;
         this.passwordEncoder = passwordEncoder;
+        this.tokenService = tokenService;
     }
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request) {
-        System.out.println(userRepository.findByEmailWithRoles(request.email()));
         var usernamePassword = new UsernamePasswordAuthenticationToken(request.email(), request.password());
 
         var auth = authenticationManager.authenticate(usernamePassword);
 
-        return ResponseEntity.ok(new LoginResponse(auth.toString()));
+        var token = tokenService.generateToken((User) auth.getPrincipal());
+
+        return ResponseEntity.ok(new LoginResponse(token));
     }
 
     @PostMapping("/register")
@@ -52,8 +56,8 @@ public class AuthController {
             return ResponseEntity.badRequest().build();
         }
 
-        var role = roleRepository.findByName("ROLE_USER")
-                .orElseThrow(() -> new IllegalArgumentException("Invalid Role: ROLE_USER"));
+        var role = roleRepository.findByName("ROLE_ADMIN")
+                .orElseThrow(() -> new IllegalArgumentException("Invalid Role: ROLE_ADMIN"));
 
         var user = new User();
         user.setEmail(request.email());
