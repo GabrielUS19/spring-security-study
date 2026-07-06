@@ -7,11 +7,15 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import dev.gabriel.security.entities.Role;
 import dev.gabriel.security.entities.User;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class TokenService {
@@ -19,18 +23,18 @@ public class TokenService {
     @Value("${api.security.token.secret}")
     private String secret;
 
-    public String generateToken(User user) {
+    public String generateToken(UserDetails user) {
         try {
             var algorithm = Algorithm.HMAC256(secret);
 
-            var roles = user.getRoles()
+            var roles = user.getAuthorities()
                     .stream()
-                    .map(Role::getName)
+                    .map(GrantedAuthority::getAuthority)
                     .toList();
 
             return JWT.create()
                     .withIssuer("gabriel")
-                    .withSubject(user.getId().toString())
+                    .withSubject(user.getUsername())
                     .withClaim("roles", roles)
                     .withExpiresAt(Instant.now().plusSeconds(15 * 60))
                     .sign(algorithm);

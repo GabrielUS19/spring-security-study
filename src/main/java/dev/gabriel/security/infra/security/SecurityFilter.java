@@ -18,12 +18,12 @@ import java.util.UUID;
 @Component
 public class SecurityFilter extends OncePerRequestFilter {
 
+    private final CustomUserDetailsService userDetailsService;
     private final TokenService tokenService;
-    private final UserRepository userRepository;
 
-    public SecurityFilter(TokenService tokenService, UserRepository userRepository) {
+    public SecurityFilter(TokenService tokenService, UserRepository userRepository, CustomUserDetailsService userDetailsService) {
         this.tokenService = tokenService;
-        this.userRepository = userRepository;
+        this.userDetailsService = userDetailsService;
     }
 
     @Override
@@ -31,12 +31,9 @@ public class SecurityFilter extends OncePerRequestFilter {
         var token = this.recoverToken(request);
 
         if (token != null) {
-            var id = tokenService.validateToken(token);
+            var email = tokenService.validateToken(token);
 
-            System.out.println(id);
-
-            UserDetails user = userRepository.findById(UUID.fromString(id))
-                    .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
+            UserDetails user = userDetailsService.loadUserByUsername(email);
 
             var authenticate = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(authenticate);
