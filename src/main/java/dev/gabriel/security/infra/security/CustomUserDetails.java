@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 public record CustomUserDetails(
         UUID id,
+        String name,
         String email,
         String password,
         Collection<? extends GrantedAuthority> authorities
@@ -26,6 +27,7 @@ public record CustomUserDetails(
 
         return new CustomUserDetails(
                 user.getId(),
+                user.getName(),
                 user.getEmail(),
                 user.getPassword(),
                 authorities);
