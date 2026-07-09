@@ -1,6 +1,7 @@
 package dev.gabriel.security.infra.exceptions;
 
 import dev.gabriel.security.exceptions.BaseException;
+import dev.gabriel.security.exceptions.EmailAlreadyRegisteredException;
 import dev.gabriel.security.exceptions.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         var problemDetail = ProblemDetail.forStatusAndDetail(ex.getHttpStatus(), ex.getMessage());
 
         problemDetail.setTitle("Resource not found");
+        problemDetail.setProperty("timestamp", Instant.now());
+
+        return problemDetail;
+    }
+
+    @ExceptionHandler(EmailAlreadyRegisteredException.class)
+    public ProblemDetail handleEmailAlreadyRegisteredException(EmailAlreadyRegisteredException ex) {
+        var problemDetail = ProblemDetail.forStatusAndDetail(ex.getHttpStatus(), ex.getMessage());
+
+        problemDetail.setTitle("Email already in use");
         problemDetail.setProperty("timestamp", Instant.now());
 
         return problemDetail;

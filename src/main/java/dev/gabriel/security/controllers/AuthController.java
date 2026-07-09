@@ -5,6 +5,7 @@ import dev.gabriel.security.dto.requests.RegisterRequest;
 import dev.gabriel.security.dto.responses.LoginResponse;
 import dev.gabriel.security.dto.responses.RegisterResponse;
 import dev.gabriel.security.entities.User;
+import dev.gabriel.security.exceptions.EmailAlreadyRegisteredException;
 import dev.gabriel.security.exceptions.ResourceNotFoundException;
 import dev.gabriel.security.infra.security.CustomUserDetails;
 import dev.gabriel.security.infra.security.TokenService;
@@ -54,10 +55,10 @@ public class AuthController {
     @Transactional
     public ResponseEntity<RegisterResponse> register(@RequestBody @Valid RegisterRequest request) {
         if (!userRepository.findByEmail(request.email()).isEmpty()) {
-            return ResponseEntity.badRequest().build();
+            throw new EmailAlreadyRegisteredException("This email is already in use");
         }
 
-        var role = roleRepository.findByName("ROLE_ADMIN")
+        var role = roleRepository.findByName("ROLE_ADMI")
                 .orElseThrow(() -> new IllegalArgumentException("Invalid Role: ROLE_ADMIN"));
 
         var user = new User();
