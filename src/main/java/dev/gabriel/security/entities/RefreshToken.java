@@ -2,6 +2,7 @@ package dev.gabriel.security.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -31,6 +32,7 @@ public class RefreshToken {
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
 
+    @CreationTimestamp
     @Column(name = "created_at")
     private Instant createdAt;
 }
