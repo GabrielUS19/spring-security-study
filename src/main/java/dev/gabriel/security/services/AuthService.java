@@ -8,6 +8,8 @@ import dev.gabriel.security.entities.RefreshToken;
 import dev.gabriel.security.entities.Role;
 import dev.gabriel.security.entities.User;
 import dev.gabriel.security.exceptions.EmailAlreadyRegisteredException;
+import dev.gabriel.security.exceptions.RefreshTokenExpiredException;
+import dev.gabriel.security.exceptions.RefreshTokenRevokedException;
 import dev.gabriel.security.exceptions.ResourceNotFoundException;
 import dev.gabriel.security.infra.security.CustomUserDetails;
 import dev.gabriel.security.infra.security.TokenService;
@@ -15,12 +17,14 @@ import dev.gabriel.security.repositories.RefreshTokenRepository;
 import dev.gabriel.security.repositories.RoleRepository;
 import dev.gabriel.security.repositories.UserRepository;
 import jakarta.transaction.Transactional;
+import org.apache.el.parser.BooleanNode;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -31,14 +35,16 @@ public class AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final AuthenticationManager authenticationManager;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder encoder;
     private final TokenService tokenService;
     private final RefreshTokenService refreshTokenService;
 
-    public AuthService(UserRepository userRepository, RoleRepository roleRepository, AuthenticationManager authenticationManager, PasswordEncoder encoder, TokenService tokenService, RefreshTokenService refreshTokenService) {
+    public AuthService(UserRepository userRepository, RoleRepository roleRepository, AuthenticationManager authenticationManager, RefreshTokenRepository refreshTokenRepository, PasswordEncoder encoder, TokenService tokenService, RefreshTokenService refreshTokenService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.authenticationManager = authenticationManager;
+        this.refreshTokenRepository = refreshTokenRepository;
         this.encoder = encoder;
         this.tokenService = tokenService;
         this.refreshTokenService = refreshTokenService;
@@ -90,6 +96,30 @@ public class AuthService {
         } catch (DataIntegrityViolationException ex) {
             throw new EmailAlreadyRegisteredException("Email already in use: " + request.email());
         }
+    }
+
+    @Transactional(dontRollbackOn = RefreshTokenRevokedException.class)
+    public LoginResult refreshToken(UUID refreshToken) {
+        var token = refreshTokenRepository.findByToken(refreshToken)
+                .orElseThrow(() -> new ResourceNotFoundException("Refresh Token not found: " + refreshToken));
+
+        if (Boolean.TRUE.equals(token.getRevoked())) {
+            refreshTokenRepository.deleteAllByUser(token.getUser());
+
+            throw new RefreshTokenRevokedException("Refresh Token Revoked");
+        }
+
+        if (token.getExpiresAt().isBefore(Instant.now())) {
+            throw new RefreshTokenExpiredException("Refresh Token Expired, do login again");
+        }
+
+        var userDetails = CustomUserDetails.fromEntity(token.getUser());
+
+        var accessToken = tokenService.generateToken(userDetails);
+        var refreshTokenSaved = refreshTokenService.generateRefreshToken(userDetails);
+
+        token.setRevoked(true);
+        return new LoginResult(userDetails.name(), accessToken, refreshTokenSaved.toString());
     }
 
     public record LoginResult(

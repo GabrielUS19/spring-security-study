@@ -1,8 +1,6 @@
 package dev.gabriel.security.infra.exceptions;
 
-import dev.gabriel.security.exceptions.BaseException;
-import dev.gabriel.security.exceptions.EmailAlreadyRegisteredException;
-import dev.gabriel.security.exceptions.ResourceNotFoundException;
+import dev.gabriel.security.exceptions.*;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -31,6 +29,26 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         var problemDetail = ProblemDetail.forStatusAndDetail(ex.getHttpStatus(), ex.getMessage());
 
         problemDetail.setTitle("Email already in use");
+        problemDetail.setProperty("timestamp", Instant.now());
+
+        return problemDetail;
+    }
+
+    @ExceptionHandler(RefreshTokenRevokedException.class)
+    public ProblemDetail handleRefreshTokenRevokedException(RefreshTokenRevokedException ex) {
+        var problemDetail = ProblemDetail.forStatusAndDetail(ex.getHttpStatus(), ex.getMessage());
+
+        problemDetail.setTitle("Refresh Token revoked");
+        problemDetail.setProperty("timestamp", Instant.now());
+
+        return problemDetail;
+    }
+
+    @ExceptionHandler(RefreshTokenExpiredException.class)
+    public ProblemDetail handleRefreshTokenExpiredException(RefreshTokenExpiredException ex) {
+        var problemDetail = ProblemDetail.forStatusAndDetail(ex.getHttpStatus(), ex.getMessage());
+
+        problemDetail.setTitle("Refresh Token expired");
         problemDetail.setProperty("timestamp", Instant.now());
 
         return problemDetail;
